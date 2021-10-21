@@ -99,5 +99,22 @@ class IttiKochSaliency(torch.nn.Module):
             self._params = params
 
     def forward(self, x):
-        gaussian_pyramid = KT.build_pyramid(x, max_level=self._params.num_levels)
+        # We first normalize the input per-channel in [0,1].
+        x_normalized = self._normalize_per_channel(x)
+        # We then build the Gaussian Pyramid from the normalized input
+        gp = KT.build_pyramid(x_normalized, max_level=self._params.num_levels)
+
         pass
+
+    @staticmethod
+    def _normalize_per_channel(x):
+        """
+        Given a tensor [B,C,H,W], normalizes each channel
+        in the range [0,1].
+        :param x: A Tensor of shape [B,C,H,W]
+        :return: A normalized version of x, normalized in [0,1] per channel.
+        """
+        max_pc = torch.amax(x, dim=(2, 3), keepdim=True)
+        min_pc = torch.amin(x, dim=(2, 3), keepdim=True)
+        x = (x - min_pc) / (max_pc - min_pc)
+        return x
