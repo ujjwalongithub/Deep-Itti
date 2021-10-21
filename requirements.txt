@@ -1,3 +1,4 @@
 albumentations
 opencv-python
 torchvision
+pytorch-lightning
