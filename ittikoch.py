@@ -13,19 +13,22 @@ class IttiKochParams(object):
     def __init__(self,
                  num_levels: int = 4,
                  cs_upper: tuple = (1, 2, 3),
-                 cs_lower: tuple = (0, 1, 2)
+                 cs_lower: tuple = (0, 1, 2),
+                 normalization_iterations: int = 5
                  ):
         """
         Class initializer.
         :param num_levels: Number of levels in the gaussian pyramid
         :param cs_upper: Pyramid levels to subtract from. Please see _check_params()
         :param cs_lower: Pyramid levels to subtract. Please see _check_params()
+        :param normalization_iterations: Number of iterations of DoG filter + normalization
         """
         super(IttiKochParams, self).__init__()
-        self._check_params(num_levels, cs_upper, cs_lower)
+        self._check_params(num_levels, cs_upper, cs_lower, normalization_iterations)
         self._num_levels = num_levels
         self._cs_upper = cs_upper
         self._cs_lower = cs_lower
+        self._normalization_iterations = normalization_iterations
 
     @property
     def num_levels(self):
@@ -51,12 +54,21 @@ class IttiKochParams(object):
         """
         return self._cs_upper
 
-    def _check_params(self, num_levels, cs_upper, cs_lower):
+    @property
+    def normalization_iterations(self):
+        """
+        Returns the number of times DoG filter application + normalization is carried out.
+        :return: Number of normalization iterations
+        """
+        return self._normalization_iterations
+
+    def _check_params(self, num_levels, cs_upper, cs_lower, normalization_iterations):
         """
         Checks the correctness of the initializer arguments
          :param num_levels: Number of levels in the gaussian pyramid
         :param cs_upper: Pyramid levels to subtract from. Please see _check_params()
         :param cs_lower: Pyramid levels to subtract. Please see _check_params()
+        :param normalization_iterations: Number of iterations of DoG filter + normalization
         :return: None if everything is fine. Else raises a ValueError
         """
         if not cs_upper == tuple(sorted(cs_upper)):
@@ -75,6 +87,9 @@ class IttiKochParams(object):
 
         if not max(cs_lower) == num_levels - 2:
             raise ValueError('Maximum entry in cs_lower must be num_levels-2.')
+
+        if not normalization_iterations > 0:
+            raise ValueError('normalization_iterations must be a positive integer.')
 
         return None
 
