@@ -5,10 +5,12 @@ import torchvision.models as TM
 
 def get_backbone(backbone_name: str, num_classes: int) -> torch.nn.Module:
     """
-    This function returns an Itti-Koch backbone for classification
+    This function returns a backbone for classification.
+    We currently use only the models defined in torchvision.models.
     :param backbone_name: Name of the backbone
     :param num_classes: Number of output classes
-    :return: A torch.nn.Module object
+    :return: A torch.nn.Module object if backbone_name is reconized
+    :raises: ValueError if backbone_name is not recognized
     """
     if backbone_name == 'vgg16':
         model = TM.vgg16(pretrained=False)
