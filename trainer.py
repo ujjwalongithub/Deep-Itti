@@ -1,8 +1,8 @@
 import pytorch_lightning as pl
 import torch
+import torchvision.models as TM
 
 
-# TODO: Implement get_backbone(...)
 def get_backbone(backbone_name: str, num_classes: int) -> torch.nn.Module:
     """
     This function returns an Itti-Koch backbone for classification
@@ -10,7 +10,26 @@ def get_backbone(backbone_name: str, num_classes: int) -> torch.nn.Module:
     :param num_classes: Number of output classes
     :return: A torch.nn.Module object
     """
-    pass
+    if backbone_name == 'vgg16':
+        model = TM.vgg16(pretrained=False)
+        model.fc = torch.nn.Linear(model.fc.in_features, num_classes)
+
+    elif backbone_name == 'alexnet':
+        model = TM.alexnet(pretrained=False)
+        model.fc = torch.nn.Linear(model.fc.in_features, num_classes)
+    elif backbone_name == 'densenet169':
+        model = TM.densenet169(pretrained=False)
+        model.classifier = torch.nn.Linear(model.classifier.in_features, num_classes)
+    elif backbone_name == 'resnext101_32x8d':
+        model = TM.resnext101_32x8d(pretrained=False)
+        model.fc = torch.nn.Linear(model.fc.in_features, num_classes)
+    elif backbone_name == 'resnext':
+        model = TM.resnext50_32x4d(pretrained=False)
+        model.fc = torch.nn.Linear(model.fc.in_features, num_classes)
+    else:
+        raise ValueError('Unrecognized backbone_name')
+
+    return model
 
 
 class DeepIttiTrainer(pl.LightningModule):
