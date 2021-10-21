@@ -16,17 +16,18 @@ def get_imagenet_transforms(is_training: bool = False) -> A.Compose:
         return _imagenet_val()
 
 
-def get_cifar10_transforms(is_training: bool = False) -> A.Compose:
+def get_cifar_transforms(is_training: bool = False) -> A.Compose:
     """
-    Returns an image augmentation transform for CIFAR10 dataset for training
-    or validation/testing
+    Returns an image augmentation transform for CIFAR10/100 dataset for training
+    or validation/testing. Use this function for both CIFAR 10 and CIFAR 100
+    datasets.
     :param is_training: A bool which is true for training and false otherwise.
     :return: An albumentations.Compose object.
     """
     if is_training:
-        return _cifar10_train()
+        return _cifar_train()
     else:
-        return _cifar10_val()
+        return _cifar_val()
 
 
 def _imagenet_train() -> A.Compose:
@@ -69,9 +70,9 @@ def _imagenet_val() -> A.Compose:
     return transform
 
 
-def _cifar10_train() -> A.Compose:
+def _cifar_train() -> A.Compose:
     """
-    Image augmentation transform for CIFAR10 dataset during training.
+    Image augmentation transform for CIFAR10/100 dataset during training.
     :return: An albumentations.Compose object
     """
     transform = A.Compose(
@@ -86,9 +87,10 @@ def _cifar10_train() -> A.Compose:
     return transform
 
 
-def _cifar10_val() -> A.Compose:
+def _cifar_val() -> A.Compose:
     """
-    Image augmentation transform for CIFAR10 dataset during validation/testing.
+    Image augmentation transform for CIFAR10/100 dataset during
+    validation/testing.
     :return: An albumentations.Compose object
     """
     transform = A.Compose(
