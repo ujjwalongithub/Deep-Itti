@@ -2,6 +2,7 @@ import typing
 
 import kornia.geometry.transform as KT
 import torch
+import cv2
 
 
 class IttiKochParams(object):
@@ -118,6 +119,16 @@ class IttiKochSaliency(torch.nn.Module):
         x_normalized = self._normalize_per_channel(x)
         # We then build the Gaussian Pyramid from the normalized input
         gp = KT.build_pyramid(x_normalized, max_level=self._params.num_levels)
+        
+        #center surround
+        dst = list()
+        for i in self._params.cs_upper:
+            h, w = int(gp[i][2]), int(gp[i][3])
+            for j in self._params.cs_lower:
+                if i>j:
+                    tmp = cv2.resize(gp[j], (w, h))
+                    nowdst = cv2.absdiff(gp[i], tmp)
+                    dst.append(nowdst)
 
         pass
 
