@@ -3,3 +3,4 @@ opencv-python
 torchvision
 pytorch-lightning
 kornia
+torch==1.10.0
