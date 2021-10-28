@@ -1,8 +1,9 @@
+import time
+
 import pytorch_lightning as pl
 import torch
-import torchmetrics
-import torchvision.models as TM
-import time
+
+from backbones import vgg
 
 
 def get_backbone(backbone_name: str, num_classes: int) -> torch.nn.Module:
@@ -15,20 +16,7 @@ def get_backbone(backbone_name: str, num_classes: int) -> torch.nn.Module:
     :raises: ValueError if backbone_name is not recognized
     """
     if backbone_name == 'vgg16':
-        model = TM.vgg16(pretrained=False)
-        model.fc = torch.nn.Linear(model.fc.in_features, num_classes)
-
-    elif backbone_name == 'alexnet':
-        model = TM.alexnet(pretrained=False)
-        model.fc = torch.nn.Linear(model.fc.in_features, num_classes)
-    elif backbone_name == 'densenet169':
-        model = TM.densenet169(pretrained=False)
-        model.classifier = torch.nn.Linear(model.classifier.in_features, num_classes)
-    elif backbone_name == 'resnext101_32x8d':
-        model = TM.resnext101_32x8d(pretrained=False)
-        model.fc = torch.nn.Linear(model.fc.in_features, num_classes)
-    elif backbone_name == 'resnext':
-        model = TM.resnext50_32x4d(pretrained=False)
+        model = vgg.vgg16(pretrained=False)
         model.fc = torch.nn.Linear(model.fc.in_features, num_classes)
     else:
         raise ValueError('Unrecognized backbone_name')
@@ -55,7 +43,7 @@ class DeepIttiTrainer(pl.LightningModule):
         x, y = batch
         logits = self._backbone(x)
         loss = torch.nn.CrossEntropyLoss()(logits, y)
-        self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True,logger=True)
+        self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         return loss
 
     def configure_optimizers(self):
@@ -70,4 +58,3 @@ class DeepIttiTrainer(pl.LightningModule):
         time_taken = time.time() - self._time_init
         self.log("Epoch time", time_taken, on_epoch=True, on_step=False)
         return None
-
