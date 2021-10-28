@@ -1,5 +1,5 @@
 import typing
-from loguru import logger
+
 import kornia.geometry.transform as KT
 import torch
 import torch.nn.functional as F
@@ -144,14 +144,11 @@ class IttiKochSaliency(torch.nn.Module):
             )
             nowdst = torch.abs(gau_pyr[i + 1] - tmp)
             dst.append(nowdst)
-        logger.info(dst)
 
         # normalisation
         for i in range(len(dst)):
-            logger.info('Before normalization dst[{}]={}'.format(i, dst[i]))
             dst[i] = self.normalizeFeatureMaps(dst[i], gau_pyr[0].shape[2],
                                                gau_pyr[0].shape[3])
-            logger.info('After normalization dst[{}]={}'.format(i, dst[i]))
 
         # add
         dst = torch.stack(dst, dim=0)
@@ -175,7 +172,7 @@ class IttiKochSaliency(torch.nn.Module):
         x = (x - min_pc) / (max_pc - min_pc)
         return x
 
-    def SMAvgLocalMax(self,src):
+    def SMAvgLocalMax(self, src):
 
         # size
         stepsize = 16
@@ -193,7 +190,6 @@ class IttiKochSaliency(torch.nn.Module):
                 lmaxmean += lmax
                 numlocal += 1
         # averaging over all the local regions
-        logger.info("lmaxmean={}\t numlocal={}.".format(lmaxmean, numlocal))
         output = lmaxmean / numlocal
 
         return torch.nan_to_num(output)
