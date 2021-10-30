@@ -55,13 +55,14 @@ def _imagenet_train() -> A.Compose:
         [
             A.SmallestMaxSize(max_size=256,
                               interpolation=cv2.INTER_CUBIC,
-                              p=1.0),
-            A.RandomCrop(height=224, width=224, p=1.0),
+                              always_apply=True),
+            A.RandomCrop(height=224, width=224, always_apply=True),
             A.HorizontalFlip(p=0.5),
             A.ToGray(p=0.2),
             A.RandomBrightnessContrast(p=0.5),
             A.CoarseDropout(p=0.3),
-            AP.ToTensorV2(p=1.0)
+            A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+            AP.ToTensorV2()
         ]
     )
 

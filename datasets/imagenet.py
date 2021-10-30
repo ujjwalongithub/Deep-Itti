@@ -15,10 +15,12 @@ def imagenet_dataset(
     creates from validation set.
     :return: A torchvision.datasets.ImageNet object.
     """
+    transform_fn = AUG.get_imagenet_transforms(is_training)
+    transformation = lambda x : transform_fn(image=x)['image']
     db = TDB.ImageNet(
         root=root_dir,
         split='train' if is_training else 'val',
-        transform=AUG.get_imagenet_transforms(is_training),
+        transform=transformation,
         loader=lambda x: cv2.cvtColor(cv2.imread(x), cv2.COLOR_BGR2RGB)
     )
 

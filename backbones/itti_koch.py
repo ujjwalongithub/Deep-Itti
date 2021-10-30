@@ -3,6 +3,7 @@ import typing
 import kornia.geometry.transform as KT
 import torch
 import torch.nn.functional as F
+import math
 
 
 class IttiKochParams(object):
@@ -123,7 +124,12 @@ class IttiKochSaliency(torch.nn.Module):
         # We first normalize the input per-channel in [0,1].
         inp = self._normalize_per_channel(x)
         # We then build the Gaussian Pyramid from the normalized input
-        max_level = int(inp.shape[2] / 1).bit_length() - 1
+        size_after_4_levels = int(inp.shape[2]/(2**4))
+        if size_after_4_levels >=3:
+            max_level = 4
+        else:
+            max_level = int(math.ceil(math.log2(inp.shape[2]/3)))
+        #max_level = int(inp.shape[2] / 6).bit_length() - 1
         u = max_level - 1
         l = max_level - 1
 
@@ -134,7 +140,7 @@ class IttiKochSaliency(torch.nn.Module):
         # center surround
         dst = list()
         for i in range(u - 1):
-            h, w = gau_pyr[i + 1].shape[2], gau_pyr[i + 1].shape[3]
+            h, w = gau_pyr[i + 1].size()[2], gau_pyr[i + 1].size()[3]
             # for j in range(l-u):
             #     tmp = cv2.resize(gau_pyr[-j-1], (w, h))
             #     nowdst = cv2.absdiff(gau_pyr[u], tmp)
@@ -155,7 +161,7 @@ class IttiKochSaliency(torch.nn.Module):
         dst = torch.sum(dst, dim=0)
 
         # mean across channels
-        dst = torch.mean(dst, dim=1)
+        #dst = torch.mean(dst, dim=1)
 
         return dst
 
@@ -179,8 +185,8 @@ class IttiKochSaliency(torch.nn.Module):
         width = src.shape[3]
         height = src.shape[2]
         # find local maxima
-        numlocal = torch.zeros(src.shape[0], src.shape[1], 1, 1)
-        lmaxmean = torch.zeros(src.shape[0], src.shape[1], 1, 1)
+        numlocal = torch.zeros(src.shape[0], src.shape[1], 1, 1).cuda()
+        lmaxmean = torch.zeros(src.shape[0], src.shape[1], 1, 1).cuda()
         for y in range(0, height - stepsize, stepsize):
             for x in range(0, width - stepsize, stepsize):
                 localimg = src[:, :, y:y + stepsize, x:x + stepsize]
@@ -205,6 +211,6 @@ class IttiKochSaliency(torch.nn.Module):
     def normalizeFeatureMaps(self, x, h, w):
         normalizedImage = self.SMNormalization(x)
         normalizedImage = F.interpolate(
-            normalizedImage, size=(h, w), mode='bilinear'
+            normalizedImage, size=(h, w), mode='nearest'
         )
         return normalizedImage
