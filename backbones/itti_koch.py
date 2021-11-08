@@ -1,3 +1,4 @@
+import math
 import typing
 
 import kornia.geometry.transform as KT
@@ -124,14 +125,14 @@ class IttiKochSaliency(torch.nn.Module):
         # We first normalize the input per-channel in [0,1].
         inp = self._normalize_per_channel(x)
         # We then build the Gaussian Pyramid from the normalized input
-        size_after_4_levels = int(inp.shape[2]/(2**4))
-        if size_after_4_levels >=3:
+        size_after_4_levels = int(inp.shape[2] / (2 ** 4))
+        if size_after_4_levels >= 3:
             max_level = 4
         else:
-            max_level = int(math.ceil(math.log2(inp.shape[2]/3)))
-        #max_level = int(inp.shape[2] / 6).bit_length() - 1
+            max_level = int(math.ceil(math.log2(inp.shape[2] / 3)))
+        # max_level = int(inp.shape[2] / 6).bit_length() - 1
         u = max_level - 1
-        l = max_level - 1
+        # l = max_level - 1
 
         # gaussian pyramid
         gau_pyr = KT.build_pyramid(inp, max_level)
@@ -161,7 +162,7 @@ class IttiKochSaliency(torch.nn.Module):
         dst = torch.sum(dst, dim=0)
 
         # mean across channels
-        #dst = torch.mean(dst, dim=1)
+        # dst = torch.mean(dst, dim=1)
 
         return dst
 
@@ -179,32 +180,41 @@ class IttiKochSaliency(torch.nn.Module):
         return x
 
     def SMAvgLocalMax(self, src):
-
         # size
         stepsize = 16
-        width = src.shape[3]
-        height = src.shape[2]
-        # find local maxima
-        numlocal = torch.zeros(src.shape[0], src.shape[1], 1, 1).cuda()
-        lmaxmean = torch.zeros(src.shape[0], src.shape[1], 1, 1).cuda()
-        for y in range(0, height - stepsize, stepsize):
-            for x in range(0, width - stepsize, stepsize):
-                localimg = src[:, :, y:y + stepsize, x:x + stepsize]
-                lmax = torch.amax(localimg, dim=(2, 3), keepdim=True)
-                lmin = torch.amin(localimg, dim=(2, 3), keepdim=True)
-                # lmin, lmax, dummy1, dummy2 = cv2.minMaxLoc(localimg)
-                lmaxmean += lmax
-                numlocal += 1
-        # averaging over all the local regions
-        output = lmaxmean / numlocal
+        if src.shape[2]<16 or src.shape[3]<16:
+            stepsize = math.ceil(min(src.shape[2], src.shape[3])/2)
+        m_pool = torch.nn.MaxPool2d(stepsize, stride=stepsize)
+        lmaxmean = m_pool(src)
+        lmaxmean = lmaxmean.view(lmaxmean.shape[0], lmaxmean.shape[1], -1).mean(2)
 
-        return torch.nan_to_num(output)
+        return torch.nan_to_num(lmaxmean)
+
+        # width = src.shape[3]
+        # height = src.shape[2]
+        # # find local maxima
+        # numlocal = torch.zeros(src.shape[0], src.shape[1], 1, 1).cuda()
+        # lmaxmean = torch.zeros(src.shape[0], src.shape[1], 1, 1).cuda()
+        # for y in range(0, height - stepsize, stepsize):
+        #     for x in range(0, width - stepsize, stepsize):
+        #         localimg = src[:, :, y:y + stepsize, x:x + stepsize]
+        #         lmax = torch.amax(localimg, dim=(2, 3), keepdim=True)
+        #         lmin = torch.amin(localimg, dim=(2, 3), keepdim=True)
+        #         # lmin, lmax, dummy1, dummy2 = cv2.minMaxLoc(localimg)
+        #         lmaxmean += lmax
+        #         numlocal += 1
+        # # averaging over all the local regions
+        # output = lmaxmean / numlocal
+
+        # return torch.nan_to_num(output)
 
     ## normalization specific for the saliency map model
     def SMNormalization(self, src):
         dst = self._normalize_per_channel(src)
         lmaxmean = self.SMAvgLocalMax(dst)
         normcoeff = (1 - lmaxmean) * (1 - lmaxmean)
+        normcoeff = normcoeff.unsqueeze(2)
+        normcoeff = normcoeff.unsqueeze(3)
         return dst * normcoeff
 
     ## normalizing feature maps
@@ -214,3 +224,25 @@ class IttiKochSaliency(torch.nn.Module):
             normalizedImage, size=(h, w), mode='nearest'
         )
         return normalizedImage
+
+# import cv2
+# img = torch.tensor(cv2.imread('shutterstock_149962697-946x658.jpg'), dtype=float)
+# # img = torch.unsqueeze(img, 0)
+# img = torch.unsqueeze(img, 0)
+# img = torch.permute(img, (0,3,1,2))
+# getSaliencyMap = IttiKochSaliency()
+# sal_map = getSaliencyMap(img)
+# sal_map = sal_map.squeeze()
+# print(sal_map.shape)
+# sal_map = sal_map*255
+# # sal_map = torch.permute(sal_map, (1,2,0))
+#
+# sal_map = sal_map.numpy()
+# # img = sal_map*img
+# # img = img.squeeze()
+# # img = torch.permute(img, (1,2,0))
+# # print(img.shape)
+# # img = img.numpy()
+# cv2.imwrite("/home/tagrawal/pySaliencyMap/temp1.jpg", sal_map[0].squeeze())
+# cv2.imwrite("/home/tagrawal/pySaliencyMap/temp2.jpg", sal_map[1].squeeze())
+# cv2.imwrite("/home/tagrawal/pySaliencyMap/temp3.jpg", sal_map[2].squeeze())
